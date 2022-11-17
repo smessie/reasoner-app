@@ -34,8 +34,8 @@
         </MDBCardText>
 
         <MDBBtn color="primary" @click="execute" id="execute-btn"
-          >Execute</MDBBtn
-        >
+          >Execute
+        </MDBBtn>
       </MDBCardBody>
     </MDBCard>
     <MDBCard>
@@ -94,9 +94,6 @@ export default {
     async execute(event) {
       event.preventDefault();
 
-      if (this.isUrl) {
-        // TODO: Implement
-      }
       // Document and query to body of request
       const inputBody = [];
       inputBody.push(
@@ -105,11 +102,27 @@ export default {
       inputBody.push(
         `${encodeURIComponent("system")}=${encodeURIComponent("eye")}`
       );
-      inputBody.push(
-        `${encodeURIComponent("formula")}=${encodeURIComponent(
-          `${this.n3doc}\n${this.n3query}`
-        )}`
-      );
+
+      if (this.isUrl) {
+        const n3doc = await fetch(this.n3docUrl, {
+          cors: "cors",
+        }).then((response) => response.text());
+        const n3query = await fetch(this.n3queryUrl, {
+          cors: "cors",
+        }).then((response) => response.text());
+
+        inputBody.push(
+          `${encodeURIComponent("formula")}=${encodeURIComponent(
+            `${n3doc}\n${n3query}`
+          )}`
+        );
+      } else {
+        inputBody.push(
+          `${encodeURIComponent("formula")}=${encodeURIComponent(
+            `${this.n3doc}\n${this.n3query}`
+          )}`
+        );
+      }
 
       let result = await fetch("http://ppr.cs.dal.ca:3002/n3", {
         headers: {
@@ -146,13 +159,6 @@ export default {
 </script>
 
 <style scoped>
-.stderr,
-.stdout {
-  white-space: pre-wrap;
-  font-family: monospace;
-  overflow-wrap: anywhere;
-}
-
 h1 {
   margin-top: 2rem;
 }
