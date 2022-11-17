@@ -129,6 +129,7 @@ export default {
   methods: {
     async execute(event) {
       event.preventDefault();
+      this.output = "";
 
       // Document and query to body of request
       const inputBody = [];
