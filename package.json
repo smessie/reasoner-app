@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@inrupt/solid-client-authn-browser": "^1.12.2",
     "mdb-vue-ui-kit": "^3.1.0",
     "vue": "^3.2.41"
   },
