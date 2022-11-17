@@ -34,7 +34,13 @@
               v-model="isUrl"
               label="Via URL"
               labelColor="primary"
-              style="margin-bottom: 3rem !important"
+            ></MDBSwitch>
+          </div>
+          <div style="margin-bottom: 1rem">
+            <MDBSwitch
+              v-model="onlyDerivations"
+              label="Only output derivations"
+              labelColor="primary"
             ></MDBSwitch>
           </div>
           <MDBInput
@@ -124,6 +130,7 @@ export default {
       isUrl: true,
       loggedIn: undefined,
       oidcIssuer: "",
+      onlyDerivations: true,
     };
   },
   created() {
@@ -141,7 +148,9 @@ export default {
       // Document and query to body of request
       const inputBody = [];
       inputBody.push(
-        `${encodeURIComponent("task")}=${encodeURIComponent("derivations")}`
+        `${encodeURIComponent("task")}=${encodeURIComponent(
+          this.onlyDerivations ? "derivations" : "deductive_closure"
+        )}`
       );
       inputBody.push(
         `${encodeURIComponent("system")}=${encodeURIComponent("eye")}`
