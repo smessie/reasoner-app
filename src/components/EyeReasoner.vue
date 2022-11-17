@@ -6,10 +6,11 @@
         <MDBCardTitle>Authentication</MDBCardTitle>
         <MDBCardText>
           <div v-if="loggedIn">
-            <span class="text-success">
+            <p class="text-success">
               You are logged in as <em>{{ loggedIn }}</em
               >.
-            </span>
+            </p>
+            <MDBBtn color="primary" @click="logout">Logout</MDBBtn>
           </div>
           <div v-else>
             <MDBInput
@@ -87,7 +88,13 @@ import {
   MDBSwitch,
   MDBTextarea,
 } from "mdb-vue-ui-kit";
-import {getDefaultSession, handleIncomingRedirect, login, fetch} from "@inrupt/solid-client-authn-browser";
+import {
+  getDefaultSession,
+  handleIncomingRedirect,
+  login,
+  fetch,
+  logout,
+} from "@inrupt/solid-client-authn-browser";
 
 export default {
   name: "EyeReasoner",
@@ -207,6 +214,10 @@ export default {
           clientName: "SWIPL-WASM-Example",
         });
       }
+    },
+    async logout() {
+      await logout();
+      this.loggedIn = undefined;
     },
   },
 };
