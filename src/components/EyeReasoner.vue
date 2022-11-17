@@ -5,33 +5,44 @@
       <MDBCardBody class="w-100">
         <MDBCardTitle>Input: N3 Document</MDBCardTitle>
         <MDBCardText>
+          <MDBSwitch
+            v-model="isUrl"
+            label="Via URL"
+            labelColor="primary"
+          ></MDBSwitch>
           <MDBInput
             label="Dataset URL"
             type="url"
+            v-model="n3docUrl"
+            style="margin-bottom: 1rem"
+            v-if="isUrl"
+          />
+          <MDBInput
+            label="Query Document URL"
+            type="url"
+            v-model="n3queryUrl"
+            v-if="isUrl"
+          />
+
+          <MDBTextarea
+            label="N3 Document"
             v-model="n3doc"
             style="margin-bottom: 1rem"
+            v-if="!isUrl"
           />
-          <MDBInput label="Query Document URL" type="url" v-model="n3query" />
+          <MDBTextarea label="N3 Query" v-model="n3query" v-if="!isUrl" />
         </MDBCardText>
-        <MDBInput
-          inputGroup
-          :formOutline="false"
-          wrapperClass="mb-3"
-          v-model="command"
-          placeholder="Command"
-          aria-label="Command"
-          aria-describedby="load-btn"
+
+        <MDBBtn color="primary" @click="execute" id="execute-btn"
+          >Execute</MDBBtn
         >
-          <MDBBtn color="primary" @click="load" id="load-btn">Load</MDBBtn>
-        </MDBInput>
       </MDBCardBody>
     </MDBCard>
     <MDBCard>
       <MDBCardBody class="w-100">
         <MDBCardTitle>Output</MDBCardTitle>
         <MDBCardText>
-          {{ n3doc }}
-          <div class="output"></div>
+          <pre>{{ output }}</pre>
         </MDBCardText>
       </MDBCardBody>
     </MDBCard>
@@ -40,15 +51,16 @@
 
 <script>
 import {
+  MDBBtn,
   MDBCard,
   MDBCardBody,
   MDBCardText,
   MDBCardTitle,
   MDBContainer,
   MDBInput,
-  MDBBtn,
+  MDBSwitch,
+  MDBTextarea,
 } from "mdb-vue-ui-kit";
-import SWIPL from "@/assets/swipl-web";
 
 export default {
   name: "EyeReasoner",
@@ -60,6 +72,8 @@ export default {
     MDBCardText,
     MDBInput,
     MDBBtn,
+    MDBSwitch,
+    MDBTextarea,
   },
   data() {
     return {
@@ -70,103 +84,62 @@ export default {
       Module: undefined,
       n3doc: "",
       n3query: "",
-      command: "main(['--wcache', 'http://josd.github.io/eye/reasoning/socrates', '.', './dataset.n3', '--query', './query.n3']).",
-      yield: null,
+      n3docUrl: "",
+      n3queryUrl: "",
+      output: "",
+      isUrl: true,
     };
   },
-  async created() {
-    console.log("created");
-    await this.run();
-  },
   methods: {
-    async run() {
-      this.Module = {
-        // Provide options for customization
-        noInitialRun: true,
-        arguments: [],
-        locateFile: (file) => {
-          return `/libs/${file}`;
-        },
-        preRun: [() => this.bindStdStreams(this.Module)],
-      };
-
-      SWIPL(this.Module).then((module) => {
-        console.log("SWIPL loaded");
-        console.log(module);
-        console.log(this.Module);
-      });
-    },
-    async load(event) {
+    async execute(event) {
       event.preventDefault();
 
-      await this.fetchWrite("https://josd.github.io/eye/eye.pl", "eye.pl");
-      await this.fetchWrite(this.n3doc, "dataset.n3");
-      await this.fetchWrite(this.n3query, "query.n3");
-
-      this.pl("set_prolog_flag(tty_control, true)");
-      this.pl("set_prolog_flag(debug_on_error, false)");
-
-      this.toplevel();
-      this.query("consult('./eye.pl')");
-
-      if (this.yield && this.yield.yield == "goal") {
-        let query = this.command;
-        this.command = "";
-        // e.target.style.display = "none";
-
-        if (!/\.\s*/.test(query)) {
-          query += ".\n";
-        }
-        this.print_output(`?- ${query}\n`, "query");
-
-        this.next(this.yield.resume(query));
-      } else {
-        alert("Not waiting for a query");
+      if (this.isUrl) {
+        // TODO: Implement
       }
-    },
-    bindStdStreams(module) {
-      module.FS.init(
-        undefined,
-        (c) => this.write("stdout", c),
-        (c) => this.write("stderr", c)
+      // Document and query to body of request
+      const inputBody = [];
+      inputBody.push(
+        `${encodeURIComponent("task")}=${encodeURIComponent("derivations")}`
       );
-    },
-    write(to, c) {
-      if (c) {
-        this.buffers[to].push(c);
-      }
+      inputBody.push(
+        `${encodeURIComponent("system")}=${encodeURIComponent("eye")}`
+      );
+      inputBody.push(
+        `${encodeURIComponent("formula")}=${encodeURIComponent(
+          `${this.n3doc}\n${this.n3query}`
+        )}`
+      );
 
-      if (c == 10 || c == null) {
-        this.flush(to);
+      let result = await fetch("http://ppr.cs.dal.ca:3002/n3", {
+        headers: {
+          "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+        },
+        body: inputBody.join("&"),
+        method: "POST",
+        credentials: "omit",
+      });
+      const body = await result.body;
+      // Read all the data from the ReadableStream
+      const reader = body.getReader();
+      const decoder = new TextDecoder();
+      let data = "";
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
+        }
+        data += decoder.decode(value);
       }
-    },
-    flush(to) {
-      const line = String.fromCharCode.apply(null, this.buffers[to]);
-      this.print_output(line, to);
-      this.buffers[to] = [];
-    },
-    print_output(line, cls) {
-      const output = document.getElementById("output");
-      const node = document.createElement("span");
-      node.className = cls;
-      node.textContent = line;
-      output.appendChild(node);
-    },
-    pl(s) {
-      this.Module.prolog.call(s);
-    },
-    async fetchWrite(link, file) {
-      const response = await fetch(link, { mode: "no-cors" }); // Added mode: 'no-cors' to avoid CORS errors
-      await this.Module.FS.writeFile(file, await response.text());
-    },
-    query(query) {
-      this.print_output(`?- ${query}.\n`, 'query');
-
-      if (this.yield && this.yield.yield == "goal") {
-        this.next(this.yield.resume(query));
+      // String to JSON
+      const json = JSON.parse(data);
+      if (json.success) {
+        this.output = json.success;
       } else {
-        alert("REPL is not waiting for a goal");
+        this.output = json.error;
       }
+      console.log(json.success);
     },
   },
 };
@@ -179,9 +152,11 @@ export default {
   font-family: monospace;
   overflow-wrap: anywhere;
 }
+
 h1 {
   margin-top: 2rem;
 }
+
 .card {
   margin-bottom: 2rem;
 }
