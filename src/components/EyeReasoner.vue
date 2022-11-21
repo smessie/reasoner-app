@@ -111,6 +111,7 @@ import {
   fetch,
   logout,
 } from "@inrupt/solid-client-authn-browser";
+import { n3reasoner } from "eye-mock";
 
 export default {
   name: "EyeReasoner",
@@ -153,69 +154,20 @@ export default {
   methods: {
     async execute(event) {
       event.preventDefault();
-      this.output = "";
 
-      // Document and query to body of request
-      const inputBody = [];
-      inputBody.push(
-        `${encodeURIComponent("task")}=${encodeURIComponent(
-          this.onlyDerivations ? "derivations" : "deductive_closure"
-        )}`
-      );
-      inputBody.push(
-        `${encodeURIComponent("system")}=${encodeURIComponent("eye")}`
-      );
+      let n3doc = this.n3doc;
+      let n3query = this.n3query;
 
       if (this.isUrl) {
-        const n3doc = await fetch(this.n3docUrl, {
+        n3doc = await fetch(this.n3docUrl, {
           cors: "cors",
         }).then((response) => response.text());
-        const n3query = await fetch(this.n3queryUrl, {
+        n3query = await fetch(this.n3queryUrl, {
           cors: "cors",
         }).then((response) => response.text());
-
-        inputBody.push(
-          `${encodeURIComponent("formula")}=${encodeURIComponent(
-            `${n3doc}\n${n3query}`
-          )}`
-        );
-      } else {
-        inputBody.push(
-          `${encodeURIComponent("formula")}=${encodeURIComponent(
-            `${this.n3doc}\n${this.n3query}`
-          )}`
-        );
       }
 
-      let result = await fetch("http://ppr.cs.dal.ca:3002/n3", {
-        headers: {
-          "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-        body: inputBody.join("&"),
-        method: "POST",
-        credentials: "omit",
-      });
-      const body = await result.body;
-      // Read all the data from the ReadableStream
-      const reader = body.getReader();
-      const decoder = new TextDecoder();
-      let data = "";
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          break;
-        }
-        data += decoder.decode(value);
-      }
-      // String to JSON
-      const json = JSON.parse(data);
-      if (json.success) {
-        this.output = json.success;
-      } else {
-        this.output = json.error;
-      }
-      console.log(json.success);
+      this.output = await n3reasoner(n3doc, n3query, this.onlyDerivations);
     },
     async login() {
       await handleIncomingRedirect();
