@@ -51,7 +51,12 @@
               v-model="onlyDerivations"
               label="Only output derivations"
               labelColor="primary"
+              disabled
             ></MDBSwitch>
+            <small class="text-muted"
+              >For the underlying EYE in the browser package, it will by default
+              only return the derived triples.</small
+            >
           </div>
           <MDBInput
             label="Dataset URL"
@@ -111,7 +116,7 @@ import {
   fetch,
   logout,
 } from "@inrupt/solid-client-authn-browser";
-import { n3reasoner } from "eye-mock";
+import { n3reasoner } from "@smessie/eye-js";
 
 export default {
   name: "EyeReasoner",
@@ -167,6 +172,7 @@ export default {
         }).then((response) => response.text());
       }
 
+      // Note! onlyDerivations is not yet supported by the eye-js reasoner.
       this.output = await n3reasoner(n3doc, n3query, this.onlyDerivations);
     },
     async login() {
