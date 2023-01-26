@@ -1,5 +1,5 @@
 <template>
-  <a href="https://github.com/smessie/SWIPL-WASM-Example"
+  <a href="https://github.com/smessie/reasoner-app"
     ><img
       loading="lazy"
       width="149"
@@ -188,7 +188,7 @@ export default {
           // e.g., the current page for a single-page app.
           redirectUrl: window.location.href,
           // Provide a name for the application when sending to the Solid Identity Provider
-          clientName: "SWIPL-WASM-Example",
+          clientName: "reasoner-app",
         });
       }
     },
