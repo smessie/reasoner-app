@@ -150,11 +150,35 @@ export default {
     };
   },
   created() {
+    // Restore solid session
     handleIncomingRedirect({
       restorePreviousSession: true,
     }).then((info) => {
       this.loggedIn = info.webId;
     });
+
+    // Restore input data
+    this.$watch(
+        () => this.$route.query,
+        () => {
+          if (this.$route.query.n3doc) {
+            this.n3doc = this.$route.query.n3doc;
+          }
+          if (this.$route.query.n3query) {
+            this.n3query = this.$route.query.n3query;
+          }
+          if (this.$route.query.n3docUrl) {
+            this.n3docUrl = this.$route.query.n3docUrl;
+          }
+          if (this.$route.query.n3queryUrl) {
+            this.n3queryUrl = this.$route.query.n3queryUrl;
+          }
+          if (this.$route.query.isUrl) {
+            this.isUrl = this.$route.query.isUrl === "true";
+          }
+        },
+        { immediate: true }
+    )
   },
   methods: {
     async execute(event) {
@@ -195,6 +219,34 @@ export default {
     async logout() {
       await logout();
       this.loggedIn = undefined;
+    },
+    updateQueryParams() {
+      this.$router.push({
+        query: {
+          n3doc: this.n3doc,
+          n3query: this.n3query,
+          n3docUrl: this.n3docUrl,
+          n3queryUrl: this.n3queryUrl,
+          isUrl: this.isUrl,
+        },
+      });
+    },
+  },
+  watch: {
+    n3doc: function () {
+      this.updateQueryParams();
+    },
+    n3query: function () {
+      this.updateQueryParams();
+    },
+    n3docUrl: function () {
+      this.updateQueryParams();
+    },
+    n3queryUrl: function () {
+      this.updateQueryParams();
+    },
+    isUrl: function () {
+      this.updateQueryParams();
     },
   },
 };
