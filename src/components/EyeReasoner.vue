@@ -55,6 +55,13 @@
           </div>
           <div style="margin-bottom: 1rem">
             <MDBSwitch
+                v-model="rdfSurfaces"
+                label="Use RDF Surfaces"
+                labelColor="primary"
+            ></MDBSwitch>
+          </div>
+          <div style="margin-bottom: 1rem">
+            <MDBSwitch
               v-model="onlyDerivations"
               label="Only output derivations"
               labelColor="primary"
@@ -76,7 +83,7 @@
             label="Query Document URL"
             type="url"
             v-model="n3queryUrl"
-            v-if="isUrl"
+            v-if="isUrl && !rdfSurfaces"
           />
 
           <MDBTextarea
@@ -85,7 +92,7 @@
             style="margin-bottom: 1rem"
             v-if="!isUrl"
           />
-          <MDBTextarea label="N3 Query" v-model="n3query" v-if="!isUrl" />
+          <MDBTextarea label="N3 Query" v-model="n3query" v-if="!isUrl && !rdfSurfaces" />
         </MDBCardText>
 
         <MDBBtn color="primary" @click="execute" id="execute-btn"
@@ -156,6 +163,7 @@ export default {
       oidcIssuer: "",
       onlyDerivations: true,
       executeInBrowser: true,
+      rdfSurfaces: false,
     };
   },
   created() {
@@ -191,6 +199,9 @@ export default {
           if (this.$route.query.executeInBrowser !== undefined) {
             this.executeInBrowser = this.$route.query.executeInBrowser === "true";
           }
+          if (this.$route.query.rdfSurfaces !== undefined) {
+            this.rdfSurfaces = this.$route.query.rdfSurfaces === "true";
+          }
         },
         { immediate: true }
     )
@@ -206,14 +217,20 @@ export default {
         n3doc = await fetch(this.n3docUrl, {
           cors: "cors",
         }).then((response) => response.text());
-        n3query = await fetch(this.n3queryUrl, {
-          cors: "cors",
-        }).then((response) => response.text());
+        if (!this.rdfSurfaces) {
+          n3query = await fetch(this.n3queryUrl, {
+            cors: "cors",
+          }).then((response) => response.text());
+        }
       }
 
-      // Note! onlyDerivations is not yet supported by the eye-js reasoner.
       const n3reasoner = this.executeInBrowser ? n3reasoner_js : n3reasoner_server;
-      this.output = await n3reasoner(n3doc, n3query, this.onlyDerivations);
+      let options = { blogic: this.rdfSurfaces };
+      // Note! onlyDerivations is not yet supported by the eye-js reasoner.
+      if (!this.executeInBrowser) {
+        options.onlyDerivations = this.onlyDerivations;
+      }
+      this.output = await n3reasoner(n3doc, n3query, options);
     },
     async login() {
       await handleIncomingRedirect();
@@ -242,6 +259,7 @@ export default {
           isUrl: this.isUrl,
           onlyDerivations: this.onlyDerivations,
           executeInBrowser: this.executeInBrowser,
+          rdfSurfaces: this.rdfSurfaces,
           n3doc: this.n3doc,
           n3query: this.n3query,
           n3docUrl: this.n3docUrl,
@@ -270,6 +288,9 @@ export default {
       this.updateQueryParams();
     },
     executeInBrowser: function () {
+      this.updateQueryParams();
+    },
+    rdfSurfaces: function () {
       this.updateQueryParams();
     },
   },
