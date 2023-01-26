@@ -41,6 +41,13 @@
         <MDBCardText>
           <div style="margin-bottom: 1rem">
             <MDBSwitch
+              v-model="executeInBrowser"
+              label="Execute in browser instead of on server"
+              labelColor="primary"
+            ></MDBSwitch>
+          </div>
+          <div style="margin-bottom: 1rem">
+            <MDBSwitch
               v-model="isUrl"
               label="Via URL"
               labelColor="primary"
@@ -51,7 +58,7 @@
               v-model="onlyDerivations"
               label="Only output derivations"
               labelColor="primary"
-              disabled
+              :disabled="executeInBrowser"
             ></MDBSwitch>
             <small class="text-muted"
               >For the underlying EYE in the browser package, it will by default
@@ -116,7 +123,8 @@ import {
   fetch,
   logout,
 } from "@inrupt/solid-client-authn-browser";
-import { n3reasoner } from "@smessie/eye-js";
+import { n3reasoner as n3reasoner_js } from "@smessie/eye-js";
+import { n3reasoner as n3reasoner_server } from "eye-mock";
 
 export default {
   name: "EyeReasoner",
@@ -147,6 +155,7 @@ export default {
       loggedIn: undefined,
       oidcIssuer: "",
       onlyDerivations: true,
+      executeInBrowser: true,
     };
   },
   created() {
@@ -173,8 +182,14 @@ export default {
           if (this.$route.query.n3queryUrl) {
             this.n3queryUrl = this.$route.query.n3queryUrl;
           }
-          if (this.$route.query.isUrl) {
+          if (this.$route.query.isUrl !== undefined) {
             this.isUrl = this.$route.query.isUrl === "true";
+          }
+          if (this.$route.query.onlyDerivations !== undefined) {
+            this.onlyDerivations = this.$route.query.onlyDerivations === "true";
+          }
+          if (this.$route.query.executeInBrowser !== undefined) {
+            this.executeInBrowser = this.$route.query.executeInBrowser === "true";
           }
         },
         { immediate: true }
@@ -197,6 +212,7 @@ export default {
       }
 
       // Note! onlyDerivations is not yet supported by the eye-js reasoner.
+      const n3reasoner = this.executeInBrowser ? n3reasoner_js : n3reasoner_server;
       this.output = await n3reasoner(n3doc, n3query, this.onlyDerivations);
     },
     async login() {
@@ -223,11 +239,13 @@ export default {
     updateQueryParams() {
       this.$router.push({
         query: {
+          isUrl: this.isUrl,
+          onlyDerivations: this.onlyDerivations,
+          executeInBrowser: this.executeInBrowser,
           n3doc: this.n3doc,
           n3query: this.n3query,
           n3docUrl: this.n3docUrl,
           n3queryUrl: this.n3queryUrl,
-          isUrl: this.isUrl,
         },
       });
     },
@@ -246,6 +264,12 @@ export default {
       this.updateQueryParams();
     },
     isUrl: function () {
+      this.updateQueryParams();
+    },
+    onlyDerivations: function () {
+      this.updateQueryParams();
+    },
+    executeInBrowser: function () {
       this.updateQueryParams();
     },
   },
