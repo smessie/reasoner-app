@@ -28,9 +28,9 @@
               label="OIDC Issuer"
               type="text"
               required
-              style="margin-bottom: 1rem"
             />
-            <MDBBtn color="primary" @click="login">Login</MDBBtn>
+            <small class="text-danger" v-if="authError">{{ authError }}<br></small>
+            <MDBBtn color="primary" @click="login" style="margin-top: 1rem">Login</MDBBtn>
           </div>
         </MDBCardText>
       </MDBCardBody>
@@ -161,6 +161,7 @@ export default {
       outputPass: "derivations",
       executeInBrowser: true,
       rdfSurfaces: false,
+      authError: "",
     };
   },
   created() {
@@ -239,6 +240,8 @@ export default {
           redirectUrl: window.location.href,
           // Provide a name for the application when sending to the Solid Identity Provider
           clientName: "reasoner-app",
+        }).catch((e) => {
+          this.authError = e.message;
         });
       }
     },
