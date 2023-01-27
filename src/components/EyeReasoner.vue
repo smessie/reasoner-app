@@ -60,17 +60,14 @@
                 labelColor="primary"
             ></MDBSwitch>
           </div>
-          <div style="margin-bottom: 1rem">
-            <MDBSwitch
-              v-model="onlyDerivations"
-              label="Only output derivations"
-              labelColor="primary"
-              :disabled="executeInBrowser"
-            ></MDBSwitch>
-            <small class="text-muted"
-              >For the underlying EYE in the browser package, it will by default
-              only return the derived triples.</small
-            >
+          <div class="input-group input-group-sm mb-3" style="margin-bottom: 2rem !important;">
+            <span class="input-group-text" id="outputPass">Output</span>
+            <select class="form-select" aria-label="Output" v-model="outputPass" aria-describedby="outputPass" style="padding-bottom: 0;">
+              <option value="derivations" selected>Derivations only</option>
+              <option value="deductive_closure">Deductive closure</option>
+              <option value="deductive_closure_plus_rules">Deductive closure plus rules</option>
+              <option value="grounded_deductive_closure_plus_rules">Grounded deductive closure plus rules</option>
+            </select>
           </div>
           <MDBInput
             label="Dataset URL"
@@ -161,7 +158,7 @@ export default {
       isUrl: true,
       loggedIn: undefined,
       oidcIssuer: "",
-      onlyDerivations: true,
+      outputPass: "derivations",
       executeInBrowser: true,
       rdfSurfaces: false,
     };
@@ -190,11 +187,11 @@ export default {
           if (this.$route.query.n3queryUrl) {
             this.n3queryUrl = this.$route.query.n3queryUrl;
           }
+          if (this.$route.query.outputPass) {
+            this.outputPass = this.$route.query.outputPass;
+          }
           if (this.$route.query.isUrl !== undefined) {
             this.isUrl = this.$route.query.isUrl === "true";
-          }
-          if (this.$route.query.onlyDerivations !== undefined) {
-            this.onlyDerivations = this.$route.query.onlyDerivations === "true";
           }
           if (this.$route.query.executeInBrowser !== undefined) {
             this.executeInBrowser = this.$route.query.executeInBrowser === "true";
@@ -225,11 +222,7 @@ export default {
       }
 
       const n3reasoner = this.executeInBrowser ? n3reasoner_js : n3reasoner_server;
-      let options = { blogic: this.rdfSurfaces };
-      // Note! onlyDerivations is not yet supported by the eye-js reasoner.
-      if (!this.executeInBrowser) {
-        options.onlyDerivations = this.onlyDerivations;
-      }
+      let options = { blogic: this.rdfSurfaces, output: this.outputPass };
       this.output = await n3reasoner(n3doc, n3query, options);
     },
     async login() {
@@ -257,9 +250,9 @@ export default {
       this.$router.push({
         query: {
           isUrl: this.isUrl,
-          onlyDerivations: this.onlyDerivations,
           executeInBrowser: this.executeInBrowser,
           rdfSurfaces: this.rdfSurfaces,
+          outputPass: this.outputPass,
           n3doc: this.n3doc,
           n3query: this.n3query,
           n3docUrl: this.n3docUrl,
@@ -284,7 +277,7 @@ export default {
     isUrl: function () {
       this.updateQueryParams();
     },
-    onlyDerivations: function () {
+    outputPass: function () {
       this.updateQueryParams();
     },
     executeInBrowser: function () {
