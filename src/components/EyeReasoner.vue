@@ -73,15 +73,17 @@
             label="Dataset URL"
             type="url"
             v-model="n3docUrl"
-            style="margin-bottom: 1rem"
             v-if="isUrl"
           />
+          <small class="text-danger" v-if="isUrl && n3docUrlError">{{ n3docUrlError }}<br></small>
           <MDBInput
             label="Query Document URL"
             type="url"
             v-model="n3queryUrl"
+            style="margin-top: 1rem"
             v-if="isUrl && !rdfSurfaces"
           />
+          <small class="text-danger" v-if="isUrl && n3queryUrlError">{{ n3queryUrlError }}<br></small>
 
           <MDBTextarea
             label="N3 Document"
@@ -162,6 +164,8 @@ export default {
       executeInBrowser: true,
       rdfSurfaces: false,
       authError: "",
+      n3docUrlError: "",
+      n3queryUrlError: "",
     };
   },
   created() {
@@ -207,19 +211,47 @@ export default {
   methods: {
     async execute(event) {
       event.preventDefault();
+      this.output = "";
+      this.n3docUrlError = "";
+      this.n3queryUrlError = "";
 
       let n3doc = this.n3doc;
       let n3query = this.n3query;
 
       if (this.isUrl) {
+        // Check if valid URLs
+        try {
+          new URL(this.n3docUrl);
+        } catch (e) {
+          this.n3docUrlError = "Enter a valid URL";
+        }
+        try {
+          new URL(this.n3queryUrl);
+        } catch (e) {
+          this.n3queryUrlError = "Enter a valid URL";
+        }
+
         n3doc = await fetch(this.n3docUrl, {
           cors: "cors",
-        }).then((response) => response.text());
+        }).then((response) => {
+          if (response.status !== 200) {
+            this.n3docUrlError = `Error ${response.status}: ${response.statusText}`;
+          }
+          return response.text();
+        });
         if (!this.rdfSurfaces) {
           n3query = await fetch(this.n3queryUrl, {
             cors: "cors",
-          }).then((response) => response.text());
+          }).then((response) => {
+            if (response.status !== 200) {
+              this.n3queryUrlError = `Error ${response.status}: ${response.statusText}`;
+            }
+            return response.text();
+          });
         }
+      }
+      if (this.n3docUrlError || this.n3queryUrlError) {
+        return;
       }
 
       const n3reasoner = this.executeInBrowser ? n3reasoner_js : n3reasoner_server;
