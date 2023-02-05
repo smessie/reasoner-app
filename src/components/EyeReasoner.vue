@@ -63,7 +63,8 @@
           <div class="input-group input-group-sm mb-3" style="margin-bottom: 2rem !important;">
             <span class="input-group-text" id="outputPass">Output</span>
             <select class="form-select" aria-label="Output" v-model="outputPass" aria-describedby="outputPass" style="padding-bottom: 0;">
-              <option value="derivations" selected>Derivations only</option>
+              <option value="undefined" selected>None</option>
+              <option value="derivations">Derivations only</option>
               <option value="deductive_closure">Deductive closure</option>
               <option value="deductive_closure_plus_rules">Deductive closure plus rules</option>
               <option value="grounded_deductive_closure_plus_rules">Grounded deductive closure plus rules</option>
@@ -129,7 +130,7 @@ import {
   fetch,
   logout,
 } from "@inrupt/solid-client-authn-browser";
-import { n3reasoner as n3reasoner_js } from "@smessie/eye-js";
+import { n3reasoner as n3reasoner_js } from "eyereasoner";
 import { n3reasoner as n3reasoner_server } from "eye-mock";
 
 export default {
@@ -255,7 +256,7 @@ export default {
       }
 
       const n3reasoner = this.executeInBrowser ? n3reasoner_js : n3reasoner_server;
-      let options = { blogic: this.rdfSurfaces, output: this.outputPass };
+      let options = { blogic: this.rdfSurfaces, output: this.outputPass === 'undefined' ? undefined : this.outputPass, outputType: "string" };
       this.output = await n3reasoner(n3doc, n3query, options);
     },
     async login() {
