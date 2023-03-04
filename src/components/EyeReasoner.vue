@@ -58,17 +58,21 @@
                 v-model="rdfSurfaces"
                 label="Use RDF Surfaces"
                 labelColor="primary"
+                :disabled="outputPass !== 'undefined'"
             ></MDBSwitch>
           </div>
-          <div class="input-group input-group-sm mb-3" style="margin-bottom: 2rem !important;">
-            <span class="input-group-text" id="outputPass">Output</span>
-            <select class="form-select" aria-label="Output" v-model="outputPass" aria-describedby="outputPass" style="padding-bottom: 0;">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text" id="outputPass">Implicit query</span>
+            <select class="form-select" aria-label="Output" v-model="outputPass" aria-describedby="outputPass" style="padding-bottom: 0;" :disabled="rdfSurfaces">
               <option value="undefined" selected>None</option>
               <option value="derivations">Derivations only</option>
               <option value="deductive_closure">Deductive closure</option>
               <option value="deductive_closure_plus_rules">Deductive closure plus rules</option>
               <option value="grounded_deductive_closure_plus_rules">Grounded deductive closure plus rules</option>
             </select>
+          </div>
+          <div style="margin-bottom: 2rem">
+            <small>Set this to none to be able to provide your own query or to use RDF surfaces.</small>
           </div>
           <MDBInput
             label="Dataset URL"
@@ -82,7 +86,7 @@
             type="url"
             v-model="n3queryUrl"
             style="margin-top: 1rem"
-            v-if="isUrl && !rdfSurfaces"
+            v-if="isUrl && !rdfSurfaces && outputPass === 'undefined'"
           />
           <small class="text-danger" v-if="isUrl && n3queryUrlError">{{ n3queryUrlError }}<br></small>
 
@@ -92,7 +96,7 @@
             style="margin-bottom: 1rem"
             v-if="!isUrl"
           />
-          <MDBTextarea label="N3 Query" v-model="n3query" v-if="!isUrl && !rdfSurfaces" />
+          <MDBTextarea label="N3 Query" v-model="n3query" v-if="!isUrl && !rdfSurfaces && outputPass === 'undefined'" />
         </MDBCardText>
 
         <MDBBtn color="primary" @click="execute" id="execute-btn"
@@ -253,6 +257,10 @@ export default {
       }
       if (this.n3docUrlError || this.n3queryUrlError) {
         return;
+      }
+
+      if (this.outputPass !== 'undefined') {
+        n3query = undefined;
       }
 
       const n3reasoner = this.executeInBrowser ? n3reasoner_js : n3reasoner_server;
