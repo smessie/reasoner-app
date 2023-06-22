@@ -259,7 +259,7 @@ export default {
         return;
       }
 
-      if (this.outputPass !== 'undefined') {
+      if (this.outputPass !== 'undefined' || this.rdfSurfaces) {
         n3query = undefined;
       }
 
