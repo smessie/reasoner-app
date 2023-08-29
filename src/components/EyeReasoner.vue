@@ -53,26 +53,15 @@
               labelColor="primary"
             ></MDBSwitch>
           </div>
-          <div style="margin-bottom: 1rem">
-            <MDBSwitch
-                v-model="rdfSurfaces"
-                label="Use RDF Surfaces"
-                labelColor="primary"
-                :disabled="outputPass !== 'undefined'"
-            ></MDBSwitch>
-          </div>
-          <div class="input-group input-group-sm">
+          <div class="input-group input-group-sm" style="margin-bottom: 1rem">
             <span class="input-group-text" id="outputPass">Implicit query</span>
-            <select class="form-select" aria-label="Output" v-model="outputPass" aria-describedby="outputPass" style="padding-bottom: 0;" :disabled="rdfSurfaces">
+            <select class="form-select" aria-label="Output" v-model="outputPass" aria-describedby="outputPass" style="padding-bottom: 0;">
               <option value="undefined" selected>None</option>
               <option value="derivations">Derivations only</option>
               <option value="deductive_closure">Deductive closure</option>
               <option value="deductive_closure_plus_rules">Deductive closure plus rules</option>
               <option value="grounded_deductive_closure_plus_rules">Grounded deductive closure plus rules</option>
             </select>
-          </div>
-          <div style="margin-bottom: 2rem">
-            <small>Set this to none to be able to provide your own query or to use RDF surfaces.</small>
           </div>
           <MDBInput
             label="Dataset URL"
@@ -86,7 +75,7 @@
             type="url"
             v-model="n3queryUrl"
             style="margin-top: 1rem"
-            v-if="isUrl && !rdfSurfaces && outputPass === 'undefined'"
+            v-if="isUrl && outputPass === 'undefined'"
           />
           <small class="text-danger" v-if="isUrl && n3queryUrlError">{{ n3queryUrlError }}<br></small>
 
@@ -96,7 +85,7 @@
             style="margin-bottom: 1rem"
             v-if="!isUrl"
           />
-          <MDBTextarea label="N3 Query" v-model="n3query" v-if="!isUrl && !rdfSurfaces && outputPass === 'undefined'" />
+          <MDBTextarea label="N3 Query" v-model="n3query" v-if="!isUrl && outputPass === 'undefined'" />
         </MDBCardText>
 
         <MDBBtn color="primary" @click="execute" id="execute-btn"
@@ -167,7 +156,6 @@ export default {
       oidcIssuer: "",
       outputPass: "derivations",
       executeInBrowser: true,
-      rdfSurfaces: false,
       authError: "",
       n3docUrlError: "",
       n3queryUrlError: "",
@@ -206,9 +194,6 @@ export default {
           if (this.$route.query.executeInBrowser !== undefined) {
             this.executeInBrowser = this.$route.query.executeInBrowser === "true";
           }
-          if (this.$route.query.rdfSurfaces !== undefined) {
-            this.rdfSurfaces = this.$route.query.rdfSurfaces === "true";
-          }
         },
         { immediate: true }
     )
@@ -244,7 +229,7 @@ export default {
           }
           return response.text();
         });
-        if (!this.rdfSurfaces) {
+        if (this.outputPass === 'undefined') {
           n3query = await fetch(this.n3queryUrl, {
             cors: "cors",
           }).then((response) => {
@@ -259,12 +244,12 @@ export default {
         return;
       }
 
-      if (this.outputPass !== 'undefined' || this.rdfSurfaces) {
+      if (this.outputPass !== 'undefined') {
         n3query = undefined;
       }
 
       const n3reasoner = this.executeInBrowser ? n3reasoner_js : n3reasoner_server;
-      let options = { blogic: this.rdfSurfaces, output: this.outputPass === 'undefined' ? undefined : this.outputPass, outputType: "string" };
+      let options = { output: this.outputPass === 'undefined' ? undefined : this.outputPass, outputType: "string" };
       this.output = await n3reasoner(n3doc, n3query, options);
     },
     async login() {
@@ -295,7 +280,6 @@ export default {
         query: {
           isUrl: this.isUrl,
           executeInBrowser: this.executeInBrowser,
-          rdfSurfaces: this.rdfSurfaces,
           outputPass: this.outputPass,
           n3doc: this.n3doc,
           n3query: this.n3query,
@@ -325,9 +309,6 @@ export default {
       this.updateQueryParams();
     },
     executeInBrowser: function () {
-      this.updateQueryParams();
-    },
-    rdfSurfaces: function () {
       this.updateQueryParams();
     },
   },
