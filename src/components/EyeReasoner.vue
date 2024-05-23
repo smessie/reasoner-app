@@ -250,7 +250,11 @@ export default {
 
       const n3reasoner = this.executeInBrowser ? n3reasoner_js : n3reasoner_server;
       let options = { output: this.outputPass === 'undefined' ? undefined : this.outputPass, outputType: "string" };
-      this.output = await n3reasoner(n3doc, n3query, options);
+      try {
+        this.output = await n3reasoner(n3doc, n3query, options);
+      } catch (e) {
+        this.output = e.message;
+      }
     },
     async login() {
       await handleIncomingRedirect();
