@@ -1,6 +1,6 @@
 <template>
   <a href="https://github.com/smessie/reasoner-app"
-    ><img
+  ><img
       loading="lazy"
       width="149"
       height="149"
@@ -18,16 +18,16 @@
           <div v-if="loggedIn">
             <p class="text-success">
               You are logged in as <em>{{ loggedIn }}</em
-              >.
+            >.
             </p>
             <MDBBtn color="primary" @click="logout">Logout</MDBBtn>
           </div>
           <div v-else>
             <MDBInput
-              v-model="oidcIssuer"
-              label="OIDC Issuer"
-              type="text"
-              required
+                v-model="oidcIssuer"
+                label="OIDC Issuer"
+                type="text"
+                required
             />
             <small class="text-danger" v-if="authError">{{ authError }}<br></small>
             <MDBBtn color="primary" @click="login" style="margin-top: 1rem">Login</MDBBtn>
@@ -41,21 +41,29 @@
         <MDBCardText>
           <div v-if="!disableRemoteExecution" style="margin-bottom: 1rem">
             <MDBSwitch
-              v-model="executeInBrowser"
-              label="Execute in browser instead of on server"
-              labelColor="primary"
+                v-model="executeInBrowser"
+                label="Execute in browser instead of on server"
+                labelColor="primary"
             ></MDBSwitch>
           </div>
           <div v-if="!disableViaUrl" style="margin-bottom: 1rem">
             <MDBSwitch
-              v-model="isUrl"
-              label="Via URL"
-              labelColor="primary"
+                v-model="isUrl"
+                label="Via URL"
+                labelColor="primary"
+            ></MDBSwitch>
+          </div>
+          <div v-if="!disableBnodeRelabeling" style="margin-bottom: 1rem">
+            <MDBSwitch
+                v-model="bnodeRelabeling"
+                label="BNode relabeling"
+                labelColor="primary"
             ></MDBSwitch>
           </div>
           <div v-if="!disableImplicitQuery" class="input-group input-group-sm" style="margin-bottom: 1rem">
             <span class="input-group-text" id="outputPass">Implicit query</span>
-            <select class="form-select" aria-label="Output" v-model="outputPass" aria-describedby="outputPass" style="padding-bottom: 0;">
+            <select class="form-select" aria-label="Output" v-model="outputPass" aria-describedby="outputPass"
+                    style="padding-bottom: 0;">
               <option v-if="!disableQueryInput" value="undefined">Explicit query</option>
               <option value="none">None</option>
               <option value="derivations">Derivations only</option>
@@ -65,32 +73,35 @@
             </select>
           </div>
           <MDBInput
-            label="Dataset URL"
-            type="url"
-            v-model="n3docUrl"
-            v-if="isUrl"
+              label="Dataset URL"
+              type="url"
+              v-model="n3docUrl"
+              v-if="isUrl"
           />
           <small class="text-danger" v-if="isUrl && n3docUrlError">{{ n3docUrlError }}<br></small>
           <MDBInput
-            label="Query Document URL"
-            type="url"
-            v-model="n3queryUrl"
-            style="margin-top: 1rem"
-            v-if="!disableQueryInput && isUrl && (outputPass === 'undefined' || disableImplicitQuery)"
+              label="Query Document URL"
+              type="url"
+              v-model="n3queryUrl"
+              style="margin-top: 1rem"
+              v-if="!disableQueryInput && isUrl && (outputPass === 'undefined' || disableImplicitQuery)"
           />
-          <small class="text-danger" v-if="!disableQueryInput && isUrl && n3queryUrlError">{{ n3queryUrlError }}<br></small>
+          <small class="text-danger" v-if="!disableQueryInput && isUrl && n3queryUrlError">{{
+              n3queryUrlError
+            }}<br></small>
 
           <MDBTextarea
-            label="N3 Document"
-            v-model="n3doc"
-            style="margin-bottom: 1rem"
-            v-if="!isUrl"
+              label="N3 Document"
+              v-model="n3doc"
+              style="margin-bottom: 1rem"
+              v-if="!isUrl"
           />
-          <MDBTextarea label="N3 Query" v-model="n3query" v-if="!disableQueryInput && !isUrl && (outputPass === 'undefined' || disableImplicitQuery)" />
+          <MDBTextarea label="N3 Query" v-model="n3query"
+                       v-if="!disableQueryInput && !isUrl && (outputPass === 'undefined' || disableImplicitQuery)"/>
         </MDBCardText>
 
         <MDBBtn color="primary" @click="execute" id="execute-btn"
-          >Execute
+        >Execute
         </MDBBtn>
       </MDBCardBody>
     </MDBCard>
@@ -117,15 +128,9 @@ import {
   MDBSwitch,
   MDBTextarea,
 } from "mdb-vue-ui-kit";
-import {
-  getDefaultSession,
-  handleIncomingRedirect,
-  login,
-  fetch,
-  logout,
-} from "@inrupt/solid-client-authn-browser";
-import { n3reasoner as n3reasoner_js } from "eyereasoner";
-import { n3reasoner as n3reasoner_server } from "eye-mock";
+import {fetch, getDefaultSession, handleIncomingRedirect, login, logout,} from "@inrupt/solid-client-authn-browser";
+import {n3reasoner as n3reasoner_js} from "eyereasoner";
+import {n3reasoner as n3reasoner_server} from "eye-mock";
 
 export default {
   name: "EyeReasoner",
@@ -147,6 +152,8 @@ export default {
       disableQueryInput: import.meta.env.VITE_DISABLE_QUERY_INPUT === "true",
       disableImplicitQuery: import.meta.env.VITE_DISABLE_IMPLICIT_QUERY === "true",
       disableViaUrl: import.meta.env.VITE_DISABLE_VIA_URL === "true",
+      disableBnodeRelabeling: import.meta.env.VITE_DISABLE_BNODE_RELABELING === "true",
+      bnodeRelabelingDefault: import.meta.env.VITE_BNODE_RELABELING_DEFAULT === "true",
       appName: import.meta.env.VITE_APP_NAME || "Eye Reasoner",
       buffers: {
         stdout: [],
@@ -159,6 +166,7 @@ export default {
       n3queryUrl: `${window.location.origin}/outputAllTriplesDefaultQuery.n3`,
       output: "",
       isUrl: !this.disableViaUrl,
+      bnodeRelabeling: this.bnodeRelabelingDefault,
       loggedIn: undefined,
       oidcIssuer: "",
       outputPass: "derivations",
@@ -203,8 +211,11 @@ export default {
           if (this.$route.query.executeInBrowser !== undefined) {
             this.executeInBrowser = this.$route.query.executeInBrowser === "true";
           }
+          if (this.$route.query.bnodeRelabeling !== undefined) {
+            this.bnodeRelabeling = this.disableBnodeRelabeling ? this.bnodeRelabelingDefault : this.$route.query.bnodeRelabeling === "true";
+          }
         },
-        { immediate: true }
+        {immediate: true}
     )
   },
   methods: {
@@ -258,7 +269,11 @@ export default {
       }
 
       const n3reasoner = this.disableRemoteExecution || this.executeInBrowser ? n3reasoner_js : n3reasoner_server;
-      let options = { output: (this.outputPass === 'undefined' || this.disableImplicitQuery) ? undefined : this.outputPass, outputType: "string" };
+      let options = {
+        output: (this.outputPass === 'undefined' || this.disableImplicitQuery) ? undefined : this.outputPass,
+        outputType: "string",
+        bnodeRelabeling: this.disableBnodeRelabeling ? this.bnodeRelabelingDefault : this.bnodeRelabeling
+      };
       try {
         this.output = await n3reasoner(n3doc, n3query, options);
       } catch (e) {
@@ -293,6 +308,7 @@ export default {
         query: {
           isUrl: this.isUrl,
           executeInBrowser: this.executeInBrowser,
+          bnodeRelabeling: this.bnodeRelabeling,
           outputPass: this.outputPass,
           n3doc: this.n3doc,
           n3query: this.n3query,
@@ -322,6 +338,9 @@ export default {
       this.updateQueryParams();
     },
     executeInBrowser: function () {
+      this.updateQueryParams();
+    },
+    bnodeRelabeling: function () {
       this.updateQueryParams();
     },
   },
