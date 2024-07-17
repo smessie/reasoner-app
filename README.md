@@ -10,6 +10,18 @@ This template should help get you started developing with Vue 3 in Vite.
 
 See [Vite Configuration Reference](https://vitejs.dev/config/).
 
+Additionally, one can configure the following environment variables. They can also be set in a `.env` file, or in a `.env.{mode}` file where `{mode}` is the Vite mode (`development` or `production`).
+
+```sh
+VITE_BASE_URL=/
+VITE_DISABLE_LOGIN=false
+VITE_DISABLE_REMOTE_EXECUTION=false
+VITE_DISABLE_QUERY_INPUT=false
+VITE_DISABLE_IMPLICIT_QUERY=false
+VITE_DISABLE_VIA_URL=false
+VITE_APP_NAME=Eye Reasoner
+```
+
 ## Project Setup
 
 ```sh

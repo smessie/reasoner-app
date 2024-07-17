@@ -10,8 +10,8 @@
       data-recalc-dims="1"
   /></a>
   <MDBContainer>
-    <h1>Eye Reasoner</h1>
-    <MDBCard>
+    <h1>{{ appName }}</h1>
+    <MDBCard v-if="!disableLogin">
       <MDBCardBody class="w-100">
         <MDBCardTitle>Authentication</MDBCardTitle>
         <MDBCardText>
@@ -39,21 +39,21 @@
       <MDBCardBody class="w-100">
         <MDBCardTitle>Input: N3 Document</MDBCardTitle>
         <MDBCardText>
-          <div style="margin-bottom: 1rem">
+          <div v-if="!disableRemoteExecution" style="margin-bottom: 1rem">
             <MDBSwitch
               v-model="executeInBrowser"
               label="Execute in browser instead of on server"
               labelColor="primary"
             ></MDBSwitch>
           </div>
-          <div style="margin-bottom: 1rem">
+          <div v-if="!disableViaUrl" style="margin-bottom: 1rem">
             <MDBSwitch
               v-model="isUrl"
               label="Via URL"
               labelColor="primary"
             ></MDBSwitch>
           </div>
-          <div class="input-group input-group-sm" style="margin-bottom: 1rem">
+          <div v-if="!disableImplicitQuery" class="input-group input-group-sm" style="margin-bottom: 1rem">
             <span class="input-group-text" id="outputPass">Implicit query</span>
             <select class="form-select" aria-label="Output" v-model="outputPass" aria-describedby="outputPass" style="padding-bottom: 0;">
               <option value="undefined" selected>None</option>
@@ -75,9 +75,9 @@
             type="url"
             v-model="n3queryUrl"
             style="margin-top: 1rem"
-            v-if="isUrl && outputPass === 'undefined'"
+            v-if="!disableQueryInput && isUrl && (outputPass === 'undefined' || disableImplicitQuery)"
           />
-          <small class="text-danger" v-if="isUrl && n3queryUrlError">{{ n3queryUrlError }}<br></small>
+          <small class="text-danger" v-if="!disableQueryInput && isUrl && n3queryUrlError">{{ n3queryUrlError }}<br></small>
 
           <MDBTextarea
             label="N3 Document"
@@ -85,7 +85,7 @@
             style="margin-bottom: 1rem"
             v-if="!isUrl"
           />
-          <MDBTextarea label="N3 Query" v-model="n3query" v-if="!isUrl && outputPass === 'undefined'" />
+          <MDBTextarea label="N3 Query" v-model="n3query" v-if="!disableQueryInput && !isUrl && (outputPass === 'undefined' || disableImplicitQuery)" />
         </MDBCardText>
 
         <MDBBtn color="primary" @click="execute" id="execute-btn"
@@ -141,6 +141,12 @@ export default {
   },
   data() {
     return {
+      disableLogin: import.meta.env.VITE_DISABLE_LOGIN === "true",
+      disableRemoteExecution: import.meta.env.VITE_DISABLE_REMOTE_EXECUTION === "true",
+      disableQueryInput: import.meta.env.VITE_DISABLE_QUERY_INPUT === "true",
+      disableImplicitQuery: import.meta.env.VITE_DISABLE_IMPLICIT_QUERY === "true",
+      disableViaUrl: import.meta.env.VITE_DISABLE_VIA_URL === "true",
+      appName: import.meta.env.VITE_APP_NAME || "Eye Reasoner",
       buffers: {
         stdout: [],
         stderr: [],
@@ -151,7 +157,7 @@ export default {
       n3docUrl: "",
       n3queryUrl: `${window.location.origin}/outputAllTriplesDefaultQuery.n3`,
       output: "",
-      isUrl: true,
+      isUrl: !this.disableViaUrl,
       loggedIn: undefined,
       oidcIssuer: "",
       outputPass: "derivations",
@@ -163,11 +169,13 @@ export default {
   },
   created() {
     // Restore solid session
-    handleIncomingRedirect({
-      restorePreviousSession: true,
-    }).then((info) => {
-      this.loggedIn = info.webId;
-    });
+    if (!this.disableLogin) {
+      handleIncomingRedirect({
+        restorePreviousSession: true,
+      }).then((info) => {
+        this.loggedIn = info.webId;
+      });
+    }
 
     // Restore input data
     this.$watch(
@@ -189,7 +197,7 @@ export default {
             this.outputPass = this.$route.query.outputPass;
           }
           if (this.$route.query.isUrl !== undefined) {
-            this.isUrl = this.$route.query.isUrl === "true";
+            this.isUrl = !this.disableViaUrl && this.$route.query.isUrl === "true";
           }
           if (this.$route.query.executeInBrowser !== undefined) {
             this.executeInBrowser = this.$route.query.executeInBrowser === "true";
@@ -229,7 +237,7 @@ export default {
           }
           return response.text();
         });
-        if (this.outputPass === 'undefined') {
+        if (this.outputPass === 'undefined' && !this.disableQueryInput) {
           n3query = await fetch(this.n3queryUrl, {
             cors: "cors",
           }).then((response) => {
@@ -244,12 +252,12 @@ export default {
         return;
       }
 
-      if (this.outputPass !== 'undefined') {
+      if ((this.outputPass !== 'undefined' && !this.disableImplicitQuery) || this.disableQueryInput) {
         n3query = undefined;
       }
 
-      const n3reasoner = this.executeInBrowser ? n3reasoner_js : n3reasoner_server;
-      let options = { output: this.outputPass === 'undefined' ? undefined : this.outputPass, outputType: "string" };
+      const n3reasoner = this.disableRemoteExecution || this.executeInBrowser ? n3reasoner_js : n3reasoner_server;
+      let options = { output: (this.outputPass === 'undefined' || this.disableImplicitQuery) ? undefined : this.outputPass, outputType: "string" };
       try {
         this.output = await n3reasoner(n3doc, n3query, options);
       } catch (e) {
