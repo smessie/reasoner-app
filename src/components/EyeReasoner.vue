@@ -56,7 +56,8 @@
           <div v-if="!disableImplicitQuery" class="input-group input-group-sm" style="margin-bottom: 1rem">
             <span class="input-group-text" id="outputPass">Implicit query</span>
             <select class="form-select" aria-label="Output" v-model="outputPass" aria-describedby="outputPass" style="padding-bottom: 0;">
-              <option value="undefined" selected>None</option>
+              <option v-if="!disableQueryInput" value="undefined">Explicit query</option>
+              <option value="none">None</option>
               <option value="derivations">Derivations only</option>
               <option value="deductive_closure">Deductive closure</option>
               <option value="deductive_closure_plus_rules">Deductive closure plus rules</option>
