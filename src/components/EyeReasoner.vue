@@ -113,6 +113,9 @@
         </MDBCardText>
       </MDBCardBody>
     </MDBCard>
+    <template v-if="extraHtmlPath">
+      <div v-html="extraHtml"></div>
+    </template>
   </MDBContainer>
 </template>
 
@@ -155,6 +158,8 @@ export default {
       disableBnodeRelabeling: import.meta.env.VITE_DISABLE_BNODE_RELABELING === "true",
       bnodeRelabelingDefault: import.meta.env.VITE_BNODE_RELABELING_DEFAULT === "true",
       appName: import.meta.env.VITE_APP_NAME || "Eye Reasoner",
+      extraHtmlPath: import.meta.env.VITE_EXTRA_HTML_PATH || "",
+      extraHtml: "",
       buffers: {
         stdout: [],
         stderr: [],
@@ -176,7 +181,7 @@ export default {
       n3queryUrlError: "",
     };
   },
-  created() {
+  async created() {
     // Restore solid session
     if (!this.disableLogin) {
       handleIncomingRedirect({
@@ -184,6 +189,9 @@ export default {
       }).then((info) => {
         this.loggedIn = info.webId;
       });
+
+      // Load extra HTML
+      this.extraHtml = await this.loadHtmlFromPath(this.extraHtmlPath);
     }
 
     // Restore input data
@@ -316,6 +324,13 @@ export default {
           n3queryUrl: this.n3queryUrl,
         },
       });
+    },
+    async loadHtmlFromPath(path) {
+      if (!path) {
+        return "";
+      }
+      const response = await fetch(path);
+      return await response.text();
     },
   },
   watch: {
