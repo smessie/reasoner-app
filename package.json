@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@inrupt/solid-client-authn-browser": "1.15.0",
-    "eye-mock": "^2.0.0",
+    "eye-mock": "^3.0.0",
     "eyereasoner": "^16.15.24",
     "mdb-vue-ui-kit": "^3.1.0",
     "vue": "^3.2.41",
